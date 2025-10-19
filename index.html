@@ -1,0 +1,1230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IoT Layout Plane (Resizable & Editable)</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: #f0f2f5;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        .container {
+            display: grid;
+            grid-template-columns: 400px 1fr; /* Increased left panel width */
+            gap: 20px;
+            max-width: 1800px; /* Increased max-width */
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        /* Left Panel */
+        .left-panel {
+            background: white;
+            border-radius: 10px;
+            padding: 25px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            height: fit-content;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .section {
+            margin-bottom: 25px;
+        }
+
+        .section h2 {
+            font-size: 18px;
+            margin-bottom: 15px;
+            color: #2c3e50;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 5px;
+        }
+
+        .device-list {
+            list-style: none;
+            display: grid;
+            grid-template-columns: 1fr 1fr; /* Two columns for devices */
+            gap: 10px;
+        }
+
+        .device-item {
+            background: #f8f9fa;
+            padding: 12px 15px;
+            border-radius: 8px;
+            border-left: 4px solid #3498db;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .device-item:hover {
+            background: #e3f2fd;
+            transform: translateY(-2px);
+        }
+
+        .device-name {
+            font-weight: 600;
+            color: #2c3e50;
+            font-size: 14px;
+        }
+
+        .device-status {
+            font-size: 11px;
+            color: #7f8c8d;
+            margin-top: 5px;
+        }
+
+        .status-active {
+            color: #27ae60;
+        }
+
+        .status-rib {
+            color: #e74c3c;
+        }
+
+        .status-clifline {
+            color: #f39c12;
+        }
+
+        .status-standby {
+            color: #3498db;
+        }
+
+        .status-calibrating {
+            color: #9b59b6;
+        }
+
+        .status-offline {
+            color: #95a5a6;
+        }
+
+        .divider {
+            height: 1px;
+            background: #ecf0f1;
+            margin: 20px 0;
+        }
+
+        .add-sensor-btn {
+            width: 100%;
+            padding: 12px;
+            background: #3498db;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background 0.3s ease;
+            margin-bottom: 15px;
+        }
+
+        .add-sensor-btn:hover {
+            background: #2980b9;
+        }
+
+        .zoom-controls {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin: 15px 0;
+        }
+
+        .zoom-btn {
+            background: #ecf0f1;
+            border: none;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .zoom-btn:hover {
+            background: #bdc3c7;
+        }
+
+        .selected-sensor {
+            background: #fff3cd;
+            padding: 10px;
+            border-radius: 6px;
+            margin: 15px 0;
+            border-left: 4px solid #ffc107;
+        }
+
+        .edit-section {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            min-height: 100px;
+        }
+
+        .perished-sensors {
+            background: #f8d7da;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #dc3545;
+        }
+
+        /* Canvas */
+        .canvas-container {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            min-height: 600px;
+            position: relative;
+        }
+
+        .canvas-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .canvas-area {
+            background: 
+                linear-gradient(90deg, #f8f9fa 1px, transparent 1px),
+                linear-gradient(#f8f9fa 1px, transparent 1px);
+            background-size: 20px 20px;
+            min-height: 500px;
+            border: 2px dashed #bdc3c7;
+            border-radius: 8px;
+            position: relative;
+        }
+
+        /* Sensor Components on Canvas */
+        .sensor-component {
+            position: absolute;
+            background: white;
+            border: 2px solid #3498db;
+            border-radius: 8px;
+            padding: 15px;
+            width: 200px; /* Slightly wider */
+            cursor: move;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+        }
+
+        .sensor-component:hover {
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            transform: translateY(-2px);
+        }
+
+        .sensor-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #ecf0f1;
+        }
+
+        .sensor-icon {
+            font-size: 20px;
+            margin-right: 8px;
+        }
+
+        .sensor-title {
+            font-weight: 600;
+            color: #2c3e50;
+            font-size: 14px;
+        }
+
+        .sensor-controls {
+            display: flex;
+            gap: 5px;
+        }
+
+        .sensor-controls button {
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+            padding: 2px 5px;
+            border-radius: 3px;
+        }
+
+        .sensor-controls button:hover {
+            background: #ecf0f1;
+        }
+
+        .sensor-data {
+            font-size: 13px;
+            color: #7f8c8d;
+        }
+
+        .sensor-status {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-right: 5px;
+        }
+
+        .status-indicator-active { background: #27ae60; }
+        .status-indicator-rib { background: #e74c3c; }
+        .status-indicator-clifline { background: #f39c12; }
+        .status-indicator-standby { background: #3498db; }
+        .status-indicator-calibrating { background: #9b59b6; }
+        .status-indicator-offline { background: #95a5a6; }
+
+        /* Modal Popup */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 10px;
+            width: 90%;
+            max-width: 700px; /* Wider modal */
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+
+        .modal-header {
+            padding: 20px;
+            border-bottom: 1px solid #ecf0f1;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-header h2 {
+            color: #2c3e50;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: #7f8c8d;
+        }
+
+        .close-btn:hover {
+            color: #e74c3c;
+        }
+
+        .modal-body {
+            padding: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #bdc3c7;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #3498db;
+        }
+
+        .sensor-options {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr); /* 3 columns for more sensors */
+            gap: 10px;
+            margin: 15px 0;
+        }
+
+        .sensor-option {
+            border: 2px solid #ecf0f1;
+            border-radius: 8px;
+            padding: 15px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .sensor-option:hover {
+            border-color: #3498db;
+            background: #e3f2fd;
+        }
+
+        .sensor-option.selected {
+            border-color: #3498db;
+            background: #3498db;
+            color: white;
+        }
+
+        .sensor-option-icon {
+            font-size: 24px;
+            margin-bottom: 8px;
+        }
+
+        .modal-footer {
+            padding: 20px;
+            border-top: 1px solid #ecf0f1;
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.3s ease;
+        }
+
+        .btn-primary {
+            background: #3498db;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #2980b9;
+        }
+
+        .btn-secondary {
+            background: #95a5a6;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #7f8c8d;
+        }
+
+        /* JSON Display */
+        .json-display {
+            background: #2c3e50;
+            color: #ecf0f1;
+            padding: 15px;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            max-height: 200px;
+            overflow-y: auto;
+            margin-top: 10px;
+        }
+
+        /* Category sections in left panel */
+        .category-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #2c3e50;
+            margin: 20px 0 10px 0;
+            padding-bottom: 5px;
+            border-bottom: 1px solid #ecf0f1;
+        }
+
+        .category-title:first-child {
+            margin-top: 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Left Panel - Now Wider -->
+        <div class="left-panel">
+            <div class="section">
+                <h2>Available Devices</h2>
+                
+                <div class="category-title">Environmental Sensors</div>
+                <ul class="device-list">
+                    <li class="device-item" data-type="temperature">
+                        <div class="device-name">Temperature Sensor</div>
+                        <div class="device-status status-active">Status: Active</div>
+                    </li>
+                    <li class="device-item" data-type="humidity">
+                        <div class="device-name">Humidity Sensor</div>
+                        <div class="device-status status-rib">Status: Rib</div>
+                    </li>
+                    <li class="device-item" data-type="light">
+                        <div class="device-name">Light Sensor</div>
+                        <div class="device-status status-clifline">Status: Clifline</div>
+                    </li>
+                    <li class="device-item" data-type="pressure">
+                        <div class="device-name">Pressure Sensor</div>
+                        <div class="device-status status-standby">Status: Standby</div>
+                    </li>
+                    <li class="device-item" data-type="air-quality">
+                        <div class="device-name">Air Quality Sensor</div>
+                        <div class="device-status status-active">Status: Active</div>
+                    </li>
+                    <li class="device-item" data-type="uv">
+                        <div class="device-name">UV Sensor</div>
+                        <div class="device-status status-calibrating">Status: Calibrating</div>
+                    </li>
+                </ul>
+
+                <div class="category-title">Motion & Presence Sensors</div>
+                <ul class="device-list">
+                    <li class="device-item" data-type="motion">
+                        <div class="device-name">Motion Sensor</div>
+                        <div class="device-status status-active">Status: Active</div>
+                    </li>
+                    <li class="device-item" data-type="proximity">
+                        <div class="device-name">Proximity Sensor</div>
+                        <div class="device-status status-standby">Status: Standby</div>
+                    </li>
+                    <li class="device-item" data-type="ultrasonic">
+                        <div class="device-name">Ultrasonic Sensor</div>
+                        <div class="device-status status-active">Status: Active</div>
+                    </li>
+                    <li class="device-item" data-type="infrared">
+                        <div class="device-name">Infrared Sensor</div>
+                        <div class="device-status status-offline">Status: Offline</div>
+                    </li>
+                </ul>
+
+                <div class="category-title">Gas & Chemical Sensors</div>
+                <ul class="device-list">
+                    <li class="device-item" data-type="gas">
+                        <div class="device-name">Gas Sensor</div>
+                        <div class="device-status status-active">Status: Active</div>
+                    </li>
+                    <li class="device-item" data-type="co2">
+                        <div class="device-name">CO2 Sensor</div>
+                        <div class="device-status status-standby">Status: Standby</div>
+                    </li>
+                    <li class="device-item" data-type="smoke">
+                        <div class="device-name">Smoke Detector</div>
+                        <div class="device-status status-active">Status: Active</div>
+                    </li>
+                    <li class="device-item" data-type="methane">
+                        <div class="device-name">Methane Sensor</div>
+                        <div class="device-status status-calibrating">Status: Calibrating</div>
+                    </li>
+                </ul>
+
+                <div class="category-title">Utility Sensors</div>
+                <ul class="device-list">
+                    <li class="device-item" data-type="water-level">
+                        <div class="device-name">Water Level Sensor</div>
+                        <div class="device-status status-active">Status: Active</div>
+                    </li>
+                    <li class="device-item" data-type="soil-moisture">
+                        <div class="device-name">Soil Moisture Sensor</div>
+                        <div class="device-status status-rib">Status: Rib</div>
+                    </li>
+                    <li class="device-item" data-type="sound">
+                        <div class="device-name">Sound Sensor</div>
+                        <div class="device-status status-clifline">Status: Clifline</div>
+                    </li>
+                    <li class="device-item" data-type="vibration">
+                        <div class="device-name">Vibration Sensor</div>
+                        <div class="device-status status-active">Status: Active</div>
+                    </li>
+                    <li class="device-item" data-type="flow">
+                        <div class="device-name">Flow Sensor</div>
+                        <div class="device-status status-standby">Status: Standby</div>
+                    </li>
+                    <li class="device-item" data-type="ph">
+                        <div class="device-name">pH Sensor</div>
+                        <div class="device-status status-offline">Status: Offline</div>
+                    </li>
+                </ul>
+            </div>
+
+            <div class="divider"></div>
+
+            <div class="section">
+                <h2>Add New Sensor</h2>
+                <button class="add-sensor-btn" id="addSensorBtn">+ Add New Sensor</button>
+                
+                <div class="zoom-controls">
+                    <span>Zoom:</span>
+                    <div>
+                        <button class="zoom-btn" id="zoomOut">-</button>
+                        <span id="zoomLevel" style="margin: 0 10px;">100%</span>
+                        <button class="zoom-btn" id="zoomIn">+</button>
+                    </div>
+                </div>
+                
+                <div class="selected-sensor">
+                    <strong>Selected Sensor:</strong> <span id="selectedSensorName">None</span>
+                </div>
+            </div>
+
+            <div class="divider"></div>
+
+            <div class="section">
+                <h2>Edit</h2>
+                <div class="edit-section" id="editSection">
+                    <p>Select a sensor to edit its properties</p>
+                </div>
+            </div>
+
+            <div class="divider"></div>
+
+            <div class="section">
+                <h2>Perished Sensors (JSON)</h2>
+                <div class="perished-sensors">
+                    <div>(1)</div>
+                    <div class="json-display" id="jsonDisplay">
+                        {/* JSON data will appear here */}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Canvas -->
+        <div class="canvas-container">
+            <div class="canvas-header">
+                <h1>IoT Layout Plane</h1>
+                <div>
+                    <button class="btn btn-secondary" id="saveLayout">Save Layout</button>
+                    <button class="btn btn-secondary" id="resetLayout">Reset</button>
+                </div>
+            </div>
+            <div class="canvas-area" id="canvasArea">
+                <!-- Sensors will be placed here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Sensor Modal - Now Wider -->
+    <div class="modal-overlay" id="addSensorModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Add New Sensor</h2>
+                <button class="close-btn" id="closeModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Sensor Type</label>
+                    <div class="sensor-options">
+                        <!-- Environmental Sensors -->
+                        <div class="sensor-option" data-type="temperature">
+                            <div class="sensor-option-icon">🌡️</div>
+                            <div>Temperature Sensor</div>
+                        </div>
+                        <div class="sensor-option" data-type="humidity">
+                            <div class="sensor-option-icon">💧</div>
+                            <div>Humidity Sensor</div>
+                        </div>
+                        <div class="sensor-option" data-type="light">
+                            <div class="sensor-option-icon">💡</div>
+                            <div>Light Sensor</div>
+                        </div>
+                        <div class="sensor-option" data-type="pressure">
+                            <div class="sensor-option-icon">📊</div>
+                            <div>Pressure Sensor</div>
+                        </div>
+                        <div class="sensor-option" data-type="air-quality">
+                            <div class="sensor-option-icon">🌬️</div>
+                            <div>Air Quality Sensor</div>
+                        </div>
+                        <div class="sensor-option" data-type="uv">
+                            <div class="sensor-option-icon">☀️</div>
+                            <div>UV Sensor</div>
+                        </div>
+
+                        <!-- Motion & Presence Sensors -->
+                        <div class="sensor-option" data-type="motion">
+                            <div class="sensor-option-icon">🚶</div>
+                            <div>Motion Sensor</div>
+                        </div>
+                        <div class="sensor-option" data-type="proximity">
+                            <div class="sensor-option-icon">📏</div>
+                            <div>Proximity Sensor</div>
+                        </div>
+                        <div class="sensor-option" data-type="ultrasonic">
+                            <div class="sensor-option-icon">📡</div>
+                            <div>Ultrasonic Sensor</div>
+                        </div>
+                        <div class="sensor-option" data-type="infrared">
+                            <div class="sensor-option-icon">🔴</div>
+                            <div>Infrared Sensor</div>
+                        </div>
+
+                        <!-- Gas & Chemical Sensors -->
+                        <div class="sensor-option" data-type="gas">
+                            <div class="sensor-option-icon">☁️</div>
+                            <div>Gas Sensor</div>
+                        </div>
+                        <div class="sensor-option" data-type="co2">
+                            <div class="sensor-option-icon">🏭</div>
+                            <div>CO2 Sensor</div>
+                        </div>
+                        <div class="sensor-option" data-type="smoke">
+                            <div class="sensor-option-icon">🔥</div>
+                            <div>Smoke Detector</div>
+                        </div>
+                        <div class="sensor-option" data-type="methane">
+                            <div class="sensor-option-icon">⛽</div>
+                            <div>Methane Sensor</div>
+                        </div>
+
+                        <!-- Utility Sensors -->
+                        <div class="sensor-option" data-type="water-level">
+                            <div class="sensor-option-icon">💧</div>
+                            <div>Water Level Sensor</div>
+                        </div>
+                        <div class="sensor-option" data-type="soil-moisture">
+                            <div class="sensor-option-icon">🌱</div>
+                            <div>Soil Moisture Sensor</div>
+                        </div>
+                        <div class="sensor-option" data-type="sound">
+                            <div class="sensor-option-icon">🔊</div>
+                            <div>Sound Sensor</div>
+                        </div>
+                        <div class="sensor-option" data-type="vibration">
+                            <div class="sensor-option-icon">📳</div>
+                            <div>Vibration Sensor</div>
+                        </div>
+                        <div class="sensor-option" data-type="flow">
+                            <div class="sensor-option-icon">🌊</div>
+                            <div>Flow Sensor</div>
+                        </div>
+                        <div class="sensor-option" data-type="ph">
+                            <div class="sensor-option-icon">🧪</div>
+                            <div>pH Sensor</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="sensorName">Sensor Name</label>
+                    <input type="text" id="sensorName" placeholder="Enter sensor name">
+                </div>
+
+                <div class="form-group">
+                    <label for="sensorLocation">Location</label>
+                    <input type="text" id="sensorLocation" placeholder="Enter location">
+                </div>
+
+                <div class="form-group">
+                    <label for="sensorStatus">Status</label>
+                    <select id="sensorStatus">
+                        <option value="active">Active</option>
+                        <option value="inactive">Inactive</option>
+                        <option value="calibrating">Calibrating</option>
+                        <option value="error">Error</option>
+                        <option value="rib">Rib</option>
+                        <option value="clifline">Clifline</option>
+                        <option value="standby">Standby</option>
+                        <option value="offline">Offline</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="cancelBtn">Cancel</button>
+                <button class="btn btn-primary" id="addBtn">Add Sensor</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class IoTLayoutPlane {
+            constructor() {
+                this.sensors = [];
+                this.selectedSensor = null;
+                this.zoomLevel = 1;
+                this.draggedSensor = null;
+                this.offsetX = 0;
+                this.offsetY = 0;
+                
+                this.initializeEventListeners();
+                this.loadInitialSensors();
+                this.updateJSONDisplay();
+            }
+
+            initializeEventListeners() {
+                // Modal controls
+                document.getElementById('addSensorBtn').addEventListener('click', () => {
+                    this.openAddSensorModal();
+                });
+
+                document.getElementById('closeModal').addEventListener('click', () => {
+                    this.closeAddSensorModal();
+                });
+
+                document.getElementById('cancelBtn').addEventListener('click', () => {
+                    this.closeAddSensorModal();
+                });
+
+                document.getElementById('addBtn').addEventListener('click', () => {
+                    this.addNewSensor();
+                });
+
+                // Zoom controls
+                document.getElementById('zoomIn').addEventListener('click', () => {
+                    this.zoom(0.1);
+                });
+
+                document.getElementById('zoomOut').addEventListener('click', () => {
+                    this.zoom(-0.1);
+                });
+
+                // Layout controls
+                document.getElementById('saveLayout').addEventListener('click', () => {
+                    this.saveLayout();
+                });
+
+                document.getElementById('resetLayout').addEventListener('click', () => {
+                    this.resetLayout();
+                });
+
+                // Sensor option selection
+                document.querySelectorAll('.sensor-option').forEach(option => {
+                    option.addEventListener('click', () => {
+                        document.querySelectorAll('.sensor-option').forEach(opt => {
+                            opt.classList.remove('selected');
+                        });
+                        option.classList.add('selected');
+                    });
+                });
+
+                // Available devices list
+                document.querySelectorAll('.device-item').forEach(item => {
+                    item.addEventListener('click', () => {
+                        const type = item.getAttribute('data-type');
+                        this.addSensorFromList(type);
+                    });
+                });
+
+                // Close modal when clicking outside
+                document.getElementById('addSensorModal').addEventListener('click', (e) => {
+                    if (e.target.id === 'addSensorModal') {
+                        this.closeAddSensorModal();
+                    }
+                });
+            }
+
+            loadInitialSensors() {
+                // Add the three sensors from the screenshot
+                const initialSensors = [
+                    { id: 'temp1', type: 'temperature', name: 'Temperature Sensor', x: 50, y: 50, status: 'active', location: 'Room A' },
+                    { id: 'humid1', type: 'humidity', name: 'Humidity Sensor', x: 250, y: 50, status: 'rib', location: 'Room A' },
+                    { id: 'light1', type: 'light', name: 'Light Sensor', x: 450, y: 50, status: 'clifline', location: 'Room A' }
+                ];
+
+                initialSensors.forEach(sensor => {
+                    this.addSensorToCanvas(sensor);
+                });
+            }
+
+            openAddSensorModal() {
+                document.getElementById('addSensorModal').style.display = 'flex';
+                // Reset form
+                document.getElementById('sensorName').value = '';
+                document.getElementById('sensorLocation').value = '';
+                document.getElementById('sensorStatus').value = 'active';
+                document.querySelectorAll('.sensor-option').forEach(opt => {
+                    opt.classList.remove('selected');
+                });
+            }
+
+            closeAddSensorModal() {
+                document.getElementById('addSensorModal').style.display = 'none';
+            }
+
+            addNewSensor() {
+                const selectedOption = document.querySelector('.sensor-option.selected');
+                if (!selectedOption) {
+                    alert('Please select a sensor type');
+                    return;
+                }
+
+                const type = selectedOption.getAttribute('data-type');
+                const name = document.getElementById('sensorName').value || `${this.capitalizeFirstLetter(type)} Sensor`;
+                const location = document.getElementById('sensorLocation').value || 'Unknown Location';
+                const status = document.getElementById('sensorStatus').value;
+
+                const sensor = {
+                    id: `${type}${Date.now()}`,
+                    type: type,
+                    name: name,
+                    x: 100 + Math.random() * 300,
+                    y: 100 + Math.random() * 200,
+                    status: status,
+                    location: location
+                };
+
+                this.addSensorToCanvas(sensor);
+                this.closeAddSensorModal();
+                this.updateJSONDisplay();
+            }
+
+            addSensorFromList(type) {
+                const sensor = {
+                    id: `${type}${Date.now()}`,
+                    type: type,
+                    name: `${this.capitalizeFirstLetter(type)} Sensor`,
+                    x: 100 + Math.random() * 300,
+                    y: 100 + Math.random() * 200,
+                    status: 'active',
+                    location: 'Room A'
+                };
+
+                this.addSensorToCanvas(sensor);
+                this.updateJSONDisplay();
+            }
+
+            addSensorToCanvas(sensor) {
+                this.sensors.push(sensor);
+                
+                const sensorEl = document.createElement('div');
+                sensorEl.className = 'sensor-component';
+                sensorEl.id = sensor.id;
+                sensorEl.style.left = `${sensor.x}px`;
+                sensorEl.style.top = `${sensor.y}px`;
+                sensorEl.style.transform = `scale(${this.zoomLevel})`;
+                sensorEl.style.transformOrigin = 'top left';
+
+                const icon = this.getSensorIcon(sensor.type);
+                const statusClass = this.getStatusClass(sensor.status);
+                const statusIndicator = this.getStatusIndicator(sensor.status);
+
+                sensorEl.innerHTML = `
+                    <div class="sensor-header">
+                        <div style="display: flex; align-items: center;">
+                            <div class="sensor-icon">${icon}</div>
+                            <div class="sensor-title">${sensor.name}</div>
+                        </div>
+                        <div class="sensor-controls">
+                            <button class="edit-btn" title="Edit">✏️</button>
+                            <button class="delete-btn" title="Delete">🗑️</button>
+                        </div>
+                    </div>
+                    <div class="sensor-data">
+                        <div><span class="sensor-status ${statusIndicator}"></span>Status: <span class="${statusClass}">${sensor.status}</span></div>
+                        <div>Location: ${sensor.location}</div>
+                        <div>${this.getSensorData(sensor.type)}</div>
+                    </div>
+                `;
+
+                document.getElementById('canvasArea').appendChild(sensorEl);
+
+                // Add event listeners
+                sensorEl.addEventListener('click', (e) => {
+                    if (!e.target.classList.contains('edit-btn') && !e.target.classList.contains('delete-btn')) {
+                        this.selectSensor(sensor.id);
+                    }
+                });
+
+                sensorEl.querySelector('.edit-btn').addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    this.editSensor(sensor.id);
+                });
+
+                sensorEl.querySelector('.delete-btn').addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    this.deleteSensor(sensor.id);
+                });
+
+                // Make draggable
+                this.makeDraggable(sensorEl);
+            }
+
+            makeDraggable(element) {
+                element.addEventListener('mousedown', (e) => {
+                    if (e.target.classList.contains('edit-btn') || e.target.classList.contains('delete-btn')) {
+                        return;
+                    }
+
+                    this.draggedSensor = element;
+                    this.selectedSensor = element.id;
+                    this.selectSensor(element.id);
+                    
+                    const rect = element.getBoundingClientRect();
+                    this.offsetX = e.clientX - rect.left;
+                    this.offsetY = e.clientY - rect.top;
+                    
+                    document.addEventListener('mousemove', this.onMouseMove.bind(this));
+                    document.addEventListener('mouseup', this.onMouseUp.bind(this));
+                });
+            }
+
+            onMouseMove(e) {
+                if (!this.draggedSensor) return;
+                
+                const canvas = document.getElementById('canvasArea');
+                const canvasRect = canvas.getBoundingClientRect();
+                
+                let x = e.clientX - canvasRect.left - this.offsetX;
+                let y = e.clientY - canvasRect.top - this.offsetY;
+                
+                // Constrain to canvas boundaries
+                x = Math.max(0, Math.min(x, canvasRect.width - this.draggedSensor.offsetWidth));
+                y = Math.max(0, Math.min(y, canvasRect.height - this.draggedSensor.offsetHeight));
+                
+                this.draggedSensor.style.left = `${x}px`;
+                this.draggedSensor.style.top = `${y}px`;
+                
+                // Update sensor data
+                const sensor = this.sensors.find(s => s.id === this.draggedSensor.id);
+                if (sensor) {
+                    sensor.x = x;
+                    sensor.y = y;
+                }
+            }
+
+            onMouseUp() {
+                this.draggedSensor = null;
+                document.removeEventListener('mousemove', this.onMouseMove.bind(this));
+                document.removeEventListener('mouseup', this.onMouseUp.bind(this));
+                this.updateJSONDisplay();
+            }
+
+            selectSensor(sensorId) {
+                // Remove previous selection
+                document.querySelectorAll('.sensor-component').forEach(sensor => {
+                    sensor.style.borderColor = '#3498db';
+                });
+                
+                // Select new sensor
+                const sensorEl = document.getElementById(sensorId);
+                if (sensorEl) {
+                    sensorEl.style.borderColor = '#e74c3c';
+                    this.selectedSensor = sensorId;
+                    
+                    const sensor = this.sensors.find(s => s.id === sensorId);
+                    if (sensor) {
+                        document.getElementById('selectedSensorName').textContent = sensor.name;
+                        this.showEditForm(sensor);
+                    }
+                }
+            }
+
+            showEditForm(sensor) {
+                const editSection = document.getElementById('editSection');
+                editSection.innerHTML = `
+                    <h3>Edit ${sensor.name}</h3>
+                    <div class="form-group">
+                        <label>Name</label>
+                        <input type="text" id="editSensorName" value="${sensor.name}">
+                    </div>
+                    <div class="form-group">
+                        <label>Location</label>
+                        <input type="text" id="editSensorLocation" value="${sensor.location}">
+                    </div>
+                    <div class="form-group">
+                        <label>Status</label>
+                        <select id="editSensorStatus">
+                            <option value="active" ${sensor.status === 'active' ? 'selected' : ''}>Active</option>
+                            <option value="inactive" ${sensor.status === 'inactive' ? 'selected' : ''}>Inactive</option>
+                            <option value="calibrating" ${sensor.status === 'calibrating' ? 'selected' : ''}>Calibrating</option>
+                            <option value="error" ${sensor.status === 'error' ? 'selected' : ''}>Error</option>
+                            <option value="rib" ${sensor.status === 'rib' ? 'selected' : ''}>Rib</option>
+                            <option value="clifline" ${sensor.status === 'clifline' ? 'selected' : ''}>Clifline</option>
+                            <option value="standby" ${sensor.status === 'standby' ? 'selected' : ''}>Standby</option>
+                            <option value="offline" ${sensor.status === 'offline' ? 'selected' : ''}>Offline</option>
+                        </select>
+                    </div>
+                    <button class="btn btn-primary" id="saveEditBtn">Save Changes</button>
+                `;
+
+                document.getElementById('saveEditBtn').addEventListener('click', () => {
+                    this.saveSensorEdit(sensor.id);
+                });
+            }
+
+            saveSensorEdit(sensorId) {
+                const sensor = this.sensors.find(s => s.id === sensorId);
+                if (sensor) {
+                    sensor.name = document.getElementById('editSensorName').value;
+                    sensor.location = document.getElementById('editSensorLocation').value;
+                    sensor.status = document.getElementById('editSensorStatus').value;
+                    
+                    // Update the sensor display
+                    const sensorEl = document.getElementById(sensorId);
+                    const statusClass = this.getStatusClass(sensor.status);
+                    const statusIndicator = this.getStatusIndicator(sensor.status);
+                    
+                    sensorEl.querySelector('.sensor-title').textContent = sensor.name;
+                    sensorEl.querySelector('.sensor-data').innerHTML = `
+                        <div><span class="sensor-status ${statusIndicator}"></span>Status: <span class="${statusClass}">${sensor.status}</span></div>
+                        <div>Location: ${sensor.location}</div>
+                        <div>${this.getSensorData(sensor.type)}</div>
+                    `;
+                    
+                    this.updateJSONDisplay();
+                }
+            }
+
+            editSensor(sensorId) {
+                this.selectSensor(sensorId);
+            }
+
+            deleteSensor(sensorId) {
+                if (confirm('Are you sure you want to delete this sensor?')) {
+                    this.sensors = this.sensors.filter(s => s.id !== sensorId);
+                    const sensorEl = document.getElementById(sensorId);
+                    if (sensorEl) {
+                        sensorEl.remove();
+                    }
+                    
+                    if (this.selectedSensor === sensorId) {
+                        this.selectedSensor = null;
+                        document.getElementById('selectedSensorName').textContent = 'None';
+                        document.getElementById('editSection').innerHTML = '<p>Select a sensor to edit its properties</p>';
+                    }
+                    
+                    this.updateJSONDisplay();
+                }
+            }
+
+            zoom(delta) {
+                this.zoomLevel = Math.max(0.5, Math.min(2, this.zoomLevel + delta));
+                document.getElementById('zoomLevel').textContent = `${Math.round(this.zoomLevel * 100)}%`;
+                
+                // Update all sensors
+                document.querySelectorAll('.sensor-component').forEach(sensor => {
+                    sensor.style.transform = `scale(${this.zoomLevel})`;
+                });
+            }
+
+            saveLayout() {
+                const layout = {
+                    sensors: this.sensors,
+                    zoomLevel: this.zoomLevel,
+                    timestamp: new Date().toISOString()
+                };
+                
+                localStorage.setItem('iotLayout', JSON.stringify(layout));
+                alert('Layout saved successfully!');
+            }
+
+            resetLayout() {
+                if (confirm('Are you sure you want to reset the layout? This will remove all sensors.')) {
+                    this.sensors = [];
+                    document.getElementById('canvasArea').innerHTML = '';
+                    document.getElementById('selectedSensorName').textContent = 'None';
+                    document.getElementById('editSection').innerHTML = '<p>Select a sensor to edit its properties</p>';
+                    this.updateJSONDisplay();
+                }
+            }
+
+            updateJSONDisplay() {
+                const jsonDisplay = document.getElementById('jsonDisplay');
+                jsonDisplay.textContent = JSON.stringify(this.sensors, null, 2);
+                
+                // Update the count
+                const countElement = document.querySelector('.perished-sensors > div');
+                if (countElement) {
+                    countElement.textContent = `(${this.sensors.length})`;
+                }
+            }
+
+            getSensorIcon(type) {
+                const icons = {
+                    'temperature': '🌡️',
+                    'humidity': '💧',
+                    'light': '💡',
+                    'motion': '🚶',
+                    'gas': '☁️',
+                    'pressure': '📊',
+                    'air-quality': '🌬️',
+                    'uv': '☀️',
+                    'proximity': '📏',
+                    'ultrasonic': '📡',
+                    'infrared': '🔴',
+                    'co2': '🏭',
+                    'smoke': '🔥',
+                    'methane': '⛽',
+                    'water-level': '💧',
+                    'soil-moisture': '🌱',
+                    'sound': '🔊',
+                    'vibration': '📳',
+                    'flow': '🌊',
+                    'ph': '🧪'
+                };
+                return icons[type] || '📟';
+            }
+
+            getStatusClass(status) {
+                const classes = {
+                    'active': 'status-active',
+                    'rib': 'status-rib',
+                    'clifline': 'status-clifline',
+                    'inactive': 'status-rib',
+                    'error': 'status-rib',
+                    'calibrating': 'status-calibrating',
+                    'standby': 'status-standby',
+                    'offline': 'status-offline'
+                };
+                return classes[status] || '';
+            }
+
+            getStatusIndicator(status) {
+                const indicators = {
+                    'active': 'status-indicator-active',
+                    'rib': 'status-indicator-rib',
+                    'clifline': 'status-indicator-clifline',
+                    'inactive': 'status-indicator-rib',
+                    'error': 'status-indicator-rib',
+                    'calibrating': 'status-indicator-calibrating',
+                    'standby': 'status-indicator-standby',
+                    'offline': 'status-indicator-offline'
+                };
+                return indicators[status] || 'status-indicator-rib';
+            }
+
+            getSensorData(type) {
+                const data = {
+                    'temperature': 'Temperature: 23.5°C',
+                    'humidity': 'Humidity: 45%',
+                    'light': 'Light Level: 350 lux',
+                    'motion': 'Motion: No detection',
+                    'gas': 'Gas Level: 0.05%',
+                    'pressure': 'Pressure: 1013 hPa',
+                    'air-quality': 'AQI: 42 (Good)',
+                    'uv': 'UV Index: 3 (Moderate)',
+                    'proximity': 'Distance: 15 cm',
+                    'ultrasonic': 'Distance: 2.3 m',
+                    'infrared': 'Object Detected: No',
+                    'co2': 'CO2: 450 ppm',
+                    'smoke': 'Smoke: Not Detected',
+                    'methane': 'Methane: 0.02%',
+                    'water-level': 'Water Level: 75%',
+                    'soil-moisture': 'Moisture: 60%',
+                    'sound': 'Sound Level: 45 dB',
+                    'vibration': 'Vibration: None',
+                    'flow': 'Flow Rate: 2.1 L/min',
+                    'ph': 'pH Level: 7.2'
+                };
+                return data[type] || 'Data: --';
+            }
+
+            capitalizeFirstLetter(string) {
+                return string.charAt(0).toUpperCase() + string.slice(1);
+            }
+        }
+
+        // Initialize the IoT Layout Plane when the page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            new IoTLayoutPlane();
+        });
+    </script>
+</body>
+</html>
